@@ -1,0 +1,38 @@
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check Requirements
+        run: ./scripts/utils/validators.sh terraform virsh
+      - name: Validate Terraform
+        run: ./scripts/terraform/validate.sh
+
+  plan:
+    needs: validate
+    runs-on: self-hosted
+    steps:
+      - name: Create Plan
+        run: ./scripts/terraform/plan.sh
+
+  deploy:
+    needs: plan
+    runs-on: self-hosted
+    steps:
+      - name: Apply Infrastructure
+        run: ./scripts/terraform/apply.sh
+      
+  verify:
+    needs: deploy
+    runs-on: self-hosted
+    steps:
+      - name: Verify VM
+        run: ./scripts/vm/verify.sh
